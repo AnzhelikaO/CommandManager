@@ -33,7 +33,7 @@ namespace CommandManager
     /// <para> Adding this attribute to command delegate
     /// sets <see cref="Command.AllowServer"/>
     /// to false. </para> </summary>
-    
+
     #endregion
     public class DisallowServer : Attribute { }
     #region Summary
@@ -46,6 +46,15 @@ namespace CommandManager
 
     #endregion
     public class DoNotLog : Attribute { }
+    #region Summary
+
+    /// <summary> Adding this attribute to command
+    /// delegate means that it will not replace existing
+    /// command(s) if one of the <see cref="Command.Names"/>
+    /// already taken. </summary>
+
+    #endregion
+    public class DoNotReplaceIfNameExists : Attribute { }
     #region Summary
 
     /// <summary> Adding this attribute to command

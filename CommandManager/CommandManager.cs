@@ -57,13 +57,33 @@ namespace CommandManager
             foreach (MethodInfo method in GetAllCommandDelegates(Plugin))
             {
                 List<Attribute> attributes = method.GetCustomAttributes().ToList();
-                Permissions permissions = (Permissions)attributes.FirstOrDefault
-                    (a => (a is Permissions)) ?? new Permissions();
+                string[] names = method.GetCustomAttribute<Names>().CommandNames;
+                List<Command> saved = new List<Command>();
+                if (!attributes.Any(a => (a is DoNotReplaceIfNameExists)))
+                {
+                    for (int i = Commands.ChatCommands.Count - 1; i >= 0; i--)
+                    {
+                        Command c = Commands.ChatCommands[i];
+                        if (c.Names.Any(n => names.Contains(n)))
+                        {
+                            saved.Add(c.Clone());
+                            Commands.ChatCommands.RemoveAt(i);
+                        }
+                    }
+                }
+                Permissions permissions =
+                    (Permissions)attributes.FirstOrDefault(a => (a is Permissions));
+                if (permissions == null)
+                {
+                    permissions =
+                        new Permissions((saved.FirstOrDefault(c =>
+                            (c.Permissions?.Any() ?? false))?.Permissions
+                            ?? new List<string>()).ToArray());
+                }
                 CommandByManager cmd = new CommandByManager
-                    (Plugin.GetType(), permissions.CommandPermissions,
+                    (Plugin.GetType(), saved, permissions.CommandPermissions,
                     (CommandDelegate)Delegate.CreateDelegate
-                    (typeof(CommandDelegate), method),
-                    method.GetCustomAttribute<Names>().CommandNames);
+                    (typeof(CommandDelegate), method), names);
                 foreach (Attribute a in attributes)
                 {
                     if (a is Help h)
@@ -75,13 +95,7 @@ namespace CommandManager
                     else if (a is DoNotLog)
                     { cmd.DoLog = false; }
                 }
-                Console.WriteLine(cmd.CommandDelegate?.Method?.Name);
-                Console.WriteLine(cmd.Name);
-                Console.WriteLine(cmd.Permissions.FirstOrDefault());
                 Commands.ChatCommands.Add(cmd);
-                Console.WriteLine(Commands.ChatCommands.Last().CommandDelegate?.Method?.Name);
-                Console.WriteLine(Commands.ChatCommands.Last().Name);
-                Console.WriteLine(Commands.ChatCommands.Last().Permissions.FirstOrDefault());
             }
         }
 
@@ -98,7 +112,10 @@ namespace CommandManager
                 Command command = Commands.ChatCommands[i];
                 if ((command is CommandByManager cmd)
                     && (cmd.PluginType == Plugin.GetType()))
-                { Commands.ChatCommands.RemoveAt(i); }
+                {
+                    Commands.ChatCommands.RemoveAt(i);
+                    Commands.ChatCommands.AddRange(cmd.Saved);
+                }
             }
         }
 
@@ -108,11 +125,15 @@ namespace CommandManager
         internal class CommandByManager : Command
         {
             public Type PluginType { get; }
+            public List<Command> Saved { get; }
             public CommandByManager(Type PluginType,
-                List<string> permissions, CommandDelegate cmd,
-                params string[] names)
+                List<Command> Saved, List<string> permissions,
+                CommandDelegate cmd, params string[] names)
                 : base(permissions, cmd, names)
-            { this.PluginType = PluginType; }
+            {
+                this.PluginType = PluginType;
+                this.Saved = (Saved ?? new List<Command>());
+            }
         }
 
         #endregion
