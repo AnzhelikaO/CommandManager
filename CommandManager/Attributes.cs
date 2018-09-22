@@ -104,6 +104,7 @@ namespace CommandManager
                                          .ToArray();
             if (Names?.Length == 0)
             { throw new InvalidOperationException(error); }
+            else { Names = new List<string>(Names).ToArray(); }
         }
     }
 
@@ -131,7 +132,8 @@ namespace CommandManager
 
         #endregion
         public Permissions(params string[] CommandPermissions) =>
-            this.CommandPermissions = (CommandPermissions ?? new string[0]).ToList();
+            this.CommandPermissions =
+                new List<string>(CommandPermissions ?? new string[0]);
     }
 
     #endregion
@@ -182,7 +184,10 @@ namespace CommandManager
 
         #endregion
         public HelpDesc(params string[] CommandHelpDesc) =>
-            this.CommandHelpDesc = CommandHelpDesc;
+            this.CommandHelpDesc =
+                ((CommandHelpDesc == null)
+                    ? null
+                    : new List<string>(CommandHelpDesc).ToArray());
     }
 
     #endregion
