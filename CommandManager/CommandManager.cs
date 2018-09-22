@@ -58,8 +58,11 @@ namespace CommandManager
             {
                 List<Attribute> attributes = method.GetCustomAttributes().ToList();
                 string[] names = method.GetCustomAttribute<Names>().CommandNames;
+                bool replace = !attributes.Any(a => (a is DoNotReplaceIfNameExists));
                 List<Command> saved = new List<Command>();
-                if (!attributes.Any(a => (a is DoNotReplaceIfNameExists)))
+                #region RemovedMatched
+
+                if (replace)
                 {
                     for (int i = Commands.ChatCommands.Count - 1; i >= 0; i--)
                     {
@@ -71,30 +74,64 @@ namespace CommandManager
                         }
                     }
                 }
+
+                #endregion
+                Command savedC = saved.FirstOrDefault();
                 Permissions permissions =
                     (Permissions)attributes.FirstOrDefault(a => (a is Permissions));
                 if (permissions == null)
                 {
                     permissions =
-                        new Permissions((saved.FirstOrDefault(c =>
-                            (c.Permissions?.Any() ?? false))?.Permissions
+                        new Permissions((savedC?.Permissions
                             ?? new List<string>()).ToArray());
                 }
                 CommandByManager cmd = new CommandByManager
                     (Plugin.GetType(), saved, permissions.CommandPermissions,
                     (CommandDelegate)Delegate.CreateDelegate
                     (typeof(CommandDelegate), method), names);
+                #region Help, HelpDesc, DisallowServer, DoNotLog attributes
+
+                bool hText = false, hDesc = false, server = false, log = false;
                 foreach (Attribute a in attributes)
                 {
                     if (a is Help h)
-                    { cmd.HelpText = h.CommandHelp; }
+                    {
+                        hText = true;
+                        cmd.HelpText = h.CommandHelp;
+                    }
                     else if (a is HelpDesc d)
-                    { cmd.HelpDesc = d.CommandHelpDesc; }
+                    {
+                        hDesc = true;
+                        cmd.HelpDesc = d.CommandHelpDesc;
+                    }
                     else if (a is DisallowServer)
-                    { cmd.AllowServer = false; }
+                    {
+                        server = true;
+                        cmd.AllowServer = false;
+                    }
                     else if (a is DoNotLog)
-                    { cmd.DoLog = false; }
+                    {
+                        log = true;
+                        cmd.DoLog = false;
+                    }
                 }
+
+                #endregion
+                #region RestoreSomeData
+
+                if (replace && (savedC != null))
+                {
+                    if (!hText && (savedC.HelpText != null))
+                    { cmd.HelpText = savedC.HelpText; }
+                    if (!hDesc && (savedC.HelpDesc != null))
+                    { cmd.HelpText = savedC.HelpText; }
+                    if (!server)
+                    { cmd.AllowServer = savedC.AllowServer; }
+                    if (!log)
+                    { cmd.DoLog = savedC.DoLog; }
+                }
+
+                #endregion
                 Commands.ChatCommands.Add(cmd);
             }
         }
