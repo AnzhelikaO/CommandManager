@@ -58,7 +58,7 @@ namespace CommandManager
         /// <exception cref="InvalidOperationException"></exception>
 
         #endregion
-        public CommandInfo(params string[] Names)
+        public CommandInfo(string[] Names)
             : this(new List<string>(), Names) { }
         #region Summary
 

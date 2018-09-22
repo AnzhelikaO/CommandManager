@@ -258,6 +258,7 @@ namespace CommandManager
             {
                 this.PluginType = PluginType;
                 this.Saved = (Saved ?? new List<Command>());
+                this.Token = Token;
             }
         }
 
