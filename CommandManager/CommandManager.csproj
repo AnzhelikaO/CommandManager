@@ -50,6 +50,10 @@
     <DocumentationFile>bin\x86\Release\CommandManager.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="OTAPI, Version=1.3.5.3, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\Desktop\_REFERENCES - копия\OTAPI.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -66,10 +70,23 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Attributes.cs" />
+    <Compile Include="Attributes\CommandInfo.cs" />
+    <Compile Include="Attributes\ReplaceIfExists.cs" />
     <Compile Include="CommandManager.cs" />
+    <Compile Include="CommandManagerArgs.cs" />
+    <Compile Include="Attributes\DisallowServer.cs" />
+    <Compile Include="Attributes\DoNotLog.cs" />
+    <Compile Include="Attributes\DoNotRegister.cs" />
+    <Compile Include="Attributes\Help.cs" />
+    <Compile Include="Attributes\HelpDesc.cs" />
+    <Compile Include="Attributes\ParameterTypes.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="Parameter\Parameter.cs" />
+    <Compile Include="Parameter\ParameterInfo.cs" />
+    <Compile Include="Parameter\ParameterParseResult.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Parsers.cs" />
+    <Compile Include="ParseTypes.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
