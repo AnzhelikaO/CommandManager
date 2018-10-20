@@ -116,108 +116,11 @@ namespace CommandManager
             ParameterTypesAttribute @params =
                 (ParameterTypesAttribute)attributes.FirstOrDefault(a =>
                     (a is ParameterTypesAttribute));
-            CommandDelegate @delegate;
-
-            #region Without ParameterTypesAttribute
-
-            if (@params == null)
-            {
-                @delegate = (args =>
-                {
-                    Dictionary<string, Parameter[]> parameters =
-                        new Dictionary<string, Parameter[]>();
-                    for (int i = 0; i < args.Parameters.Count; i++)
-                    {
-                        parameters.Add(i.ToString(),
-                            new Parameter[] { new Parameter(args.Parameters[i], null) });
-                    }
-
-                    Method.Invoke(null,
-                        new object[]
-                        {
-                                new CommandManagerArgs
-                                (
-                                    args.Player,
-                                    args.Message,
-                                    args.Silent,
-                                    args.Parameters,
-                                    parameters
-                                )
-                        });
-                });
-            }
-
-            #endregion
-            #region With ParameterTypesAttribute
-
-            else
-            {
-                @delegate = (args =>
-                {
-                    if ((@params.RequiredParametersCount != -1)
-                        && (args.Parameters.Count < @params.RequiredParametersCount))
-                    {
-                        args.Player.SendErrorMessage
-                        (@params.CreateErrorMessage(names[0]));
-                        return;
-                    }
-
-                    Dictionary<string, Parameter[]> parameters =
-                        new Dictionary<string, Parameter[]>();
-                    for (int i = 0; i < @params.ParameterTypes.Length; i++)
-                    {
-                        ParameterInfo p = @params.ParameterTypes[i];
-                        if ((i < args.Parameters.Count) && (p != null))
-                        {
-                            if (p.AllowMergeInErrorMessage.HasValue)
-                            {
-                                if (!p.Parse(args.Parameters.Skip(i),
-                                    out ParameterParseResult[] result))
-                                {
-                                    args.Player.SendErrorMessage(result.FirstOrDefault
-                                        (r => (r.Error != null)).Error);
-                                    return;
-                                }
-                                parameters.Add(p.Name, result.Select(r =>
-                                    new Parameter(r.Input, r.Output)).ToArray());
-                            }
-                            else if (!p.Parse(args.Parameters[i],
-                                out ParameterParseResult result))
-                            {
-                                args.Player.SendErrorMessage(result.Error);
-                                return;
-                            }
-                            else
-                            {
-                                Parameter param = new Parameter(result.Input, result.Output);
-                                parameters.Add(p.Name, new Parameter[] { param });
-                            }
-                        }
-                        else
-                        {
-                            Parameter param = new Parameter
-                                (args.Parameters.ElementAtOrDefault(i), null);
-                            parameters.Add(p.Name, new Parameter[] { param });
-                        }
-                    }
-
-                    Method.Invoke(null,
-                        new object[]
-                        {
-                                new CommandManagerArgs
-                                (
-                                    args.Player,
-                                    args.Message,
-                                    args.Silent,
-                                    args.Parameters,
-                                    parameters
-                                )
-                        });
-                });
-            }
-
-            #endregion
-
+            CommandDelegate @delegate =
+                ((@params == null)
+                    ? CreateNewCommandDelegate(Method)
+                    : CreateNewCommandDelegate(Method, @params, Name));
+            
             #endregion
             CommandByManager cmd = new CommandByManager(Method,
                 saved, info.CommandPermissions, @delegate, names);
@@ -264,6 +167,140 @@ namespace CommandManager
             #endregion
             Commands.ChatCommands.Add(cmd);
             return true;
+        }
+
+        #endregion
+        #region CheckMethodInfo
+
+        private static void CheckMethodInfo(MethodInfo MethodInfo)
+        {
+            if (MethodInfo.ReflectedType != typeof(CommandManagerDelegate))
+            {
+                throw new ArgumentException("OriginalMethodInfo " +
+                    "must be method of CommandManagerDelegate.");
+            }
+            if (!MethodInfo.IsStatic)
+            {
+                throw new ArgumentException("OriginalMethodInfo " +
+                    "must be static.");
+            }
+            if (!MethodInfo.IsPublic)
+            {
+                throw new ArgumentException("OriginalMethodInfo " +
+                    "must be public.");
+            }
+            if (!MethodInfo.GetCustomAttributes().Any(a => (a is CommandInfoAttribute)))
+            {
+                throw new ArgumentException("OriginalMethodInfo " +
+                    "must have CommandInfoAttribute.");
+            }
+        }
+
+        #endregion
+        #region CreateNewCommandDelegate [Without ParameterTypesAttribute]
+
+        /// <summary> Creates CommandDelegate with method of CommandManagerDelegate. </summary>
+        public static CommandDelegate CreateNewCommandDelegate
+            (MethodInfo OriginalMethodInfo)
+        {
+            CheckMethodInfo(OriginalMethodInfo);
+            return (args =>
+            {
+                Dictionary<string, Parameter[]> parameters =
+                    new Dictionary<string, Parameter[]>();
+                for (int i = 0; i < args.Parameters.Count; i++)
+                {
+                    parameters.Add(i.ToString(),
+                        new Parameter[] { new Parameter(args.Parameters[i], null) });
+                }
+
+                OriginalMethodInfo.Invoke(null,
+                    new object[]
+                    {
+                        new CommandManagerArgs
+                        (
+                            args.Player,
+                            args.Message,
+                            args.Silent,
+                            args.Parameters,
+                            parameters
+                        )
+                    });
+            });
+        }
+
+        #endregion
+        #region CreateNewCommandDelegate [With ParameterTypesAttribute]
+
+        /// <summary> Creates CommandDelegate with method of CommandManagerDelegate. </summary>
+        public static CommandDelegate CreateNewCommandDelegate
+            (MethodInfo OriginalMethodInfo,
+            ParameterTypesAttribute ParameterTypes,
+            string CommandName)
+        {
+            CheckMethodInfo(OriginalMethodInfo);
+            return (args =>
+            {
+                if ((ParameterTypes.RequiredParametersCount != -1)
+                    && (args.Parameters.Count < ParameterTypes.RequiredParametersCount))
+                {
+                    args.Player.SendErrorMessage
+                    (ParameterTypes.CreateErrorMessage(CommandName));
+                    return;
+                }
+
+                Dictionary<string, Parameter[]> parameters =
+                    new Dictionary<string, Parameter[]>();
+                for (int i = 0; i < ParameterTypes.ParameterTypes.Length; i++)
+                {
+                    ParameterInfo p = ParameterTypes.ParameterTypes[i];
+                    if ((i < args.Parameters.Count) && (p != null))
+                    {
+                        if (p.AllowMergeInErrorMessage.HasValue)
+                        {
+                            if (!p.Parse(args.Parameters.Skip(i),
+                                out ParameterParseResult[] result))
+                            {
+                                args.Player.SendErrorMessage(result.FirstOrDefault
+                                    (r => (r.Error != null)).Error);
+                                return;
+                            }
+                            parameters.Add(p.Name, result.Select(r =>
+                                new Parameter(r.Input, r.Output)).ToArray());
+                        }
+                        else if (!p.Parse(args.Parameters[i],
+                            out ParameterParseResult result))
+                        {
+                            args.Player.SendErrorMessage(result.Error);
+                            return;
+                        }
+                        else
+                        {
+                            Parameter param = new Parameter(result.Input, result.Output);
+                            parameters.Add(p.Name, new Parameter[] { param });
+                        }
+                    }
+                    else
+                    {
+                        Parameter param = new Parameter
+                            (args.Parameters.ElementAtOrDefault(i), null);
+                        parameters.Add(p.Name, new Parameter[] { param });
+                    }
+                }
+
+                OriginalMethodInfo.Invoke(null,
+                    new object[]
+                    {
+                                new CommandManagerArgs
+                                (
+                                    args.Player,
+                                    args.Message,
+                                    args.Silent,
+                                    args.Parameters,
+                                    parameters
+                                )
+                    });
+            });
         }
 
         #endregion
