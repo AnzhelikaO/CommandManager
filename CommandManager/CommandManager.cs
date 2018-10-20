@@ -119,7 +119,9 @@ namespace CommandManager
             CommandDelegate @delegate =
                 ((@params == null)
                     ? CreateNewCommandDelegate(Method)
-                    : CreateNewCommandDelegate(Method, @params, Name));
+                    : CreateNewCommandDelegate(Method, @params,
+                        ((ErrorMessageAttribute)attributes.FirstOrDefault(a =>
+                        (a is ErrorMessageAttribute)))?.Message, Name));
             
             #endregion
             CommandByManager cmd = new CommandByManager(Method,
@@ -236,7 +238,7 @@ namespace CommandManager
         public static CommandDelegate CreateNewCommandDelegate
             (MethodInfo OriginalMethodInfo,
             ParameterTypesAttribute ParameterTypes,
-            string CommandName)
+            string ErrorMessageOverride, string CommandName)
         {
             CheckMethodInfo(OriginalMethodInfo);
             return (args =>
@@ -245,7 +247,9 @@ namespace CommandManager
                     && (args.Parameters.Count < ParameterTypes.RequiredParametersCount))
                 {
                     args.Player.SendErrorMessage
-                    (ParameterTypes.CreateErrorMessage(CommandName));
+                    (string.IsNullOrWhiteSpace(ErrorMessageOverride)
+                        ? ParameterTypes.CreateErrorMessage(CommandName)
+                        : ErrorMessageOverride);
                     return;
                 }
 

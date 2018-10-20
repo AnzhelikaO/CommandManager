@@ -73,6 +73,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Attributes\CommandInfo.cs" />
+    <Compile Include="Attributes\ErrorMessage.cs" />
     <Compile Include="Attributes\ReplaceIfExists.cs" />
     <Compile Include="CommandManager.cs" />
     <Compile Include="CommandManagerArgs.cs" />
