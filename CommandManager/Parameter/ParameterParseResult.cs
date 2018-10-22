@@ -9,11 +9,11 @@
         public string Input { get; }
         /// <summary> Parsed value (by one functions in
         /// <see cref="CommandManager.Parsers"/>). </summary>
-        public object Output { get; }
+        public object Output { get; internal set; }
         /// <summary> If true, <see cref="Input"/> was successfully
         /// parsed, <see cref="Output"/> has value and
         /// <see cref="Error"/> is null. </summary>
-        public bool Success { get; }
+        public bool Success { get; internal set; }
         /// <summary> Message that will be shown to command
         /// caller if parse was not successful. </summary>
         public string Error { get; internal set; }

@@ -36,6 +36,27 @@ namespace CommandManager
         public static Dictionary<Type, Func<string, ParameterParseResult>>
             Parsers = new Dictionary<Type, Func<string, ParameterParseResult>>()
             {
+                #region Boolean
+
+                {
+                    typeof(bool),
+                    (o =>
+                    {
+                        if (o == null)
+                        {
+                            return new ParameterParseResult(o, o,
+                                false, "Boolean cannot be null.");
+                        }
+                        else if (!bool.TryParse(o, out bool b))
+                        {
+                            return new ParameterParseResult(o, o,
+                                false, "Could not parse boolean.");
+                        }
+                        else { return new ParameterParseResult(o, b, true, null); }
+                    })
+                },
+
+                #endregion
                 #region Buff
 
                 {

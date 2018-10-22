@@ -25,7 +25,7 @@ namespace CommandManager
     /// If parameter name ends with '-notype', parameter will be shown
     /// as '&lt;Name&gt;' instead of '&lt;Name (Type)&gt;'.
     /// <para> Uneven elements of array (parameter types)
-    /// must be <see cref="Type"/>. </para>
+    /// must be <see cref="Type"/> or string[] (that contains parameter.ToLower()). </para>
     /// ——————————
     /// <para> Predefined supported types: </para>
     /// <see cref="byte"/>, <see cref="decimal"/>, <see cref="double"/>,
@@ -62,7 +62,7 @@ namespace CommandManager
         /// If parameter name ends with '-notype', parameter will be shown
         /// as '&lt;Name&gt;' instead of '&lt;Name (Type)&gt;'.
         /// <para> Uneven elements of array (parameter types)
-        /// must be <see cref="Type"/>. </para>
+        /// must be <see cref="Type"/> or string[] (that contains parameter.ToLower()). </para>
         /// ——————————
         /// <para> Predefined supported types: </para>
         /// <see cref="byte"/>, <see cref="decimal"/>, <see cref="double"/>,
@@ -115,7 +115,7 @@ namespace CommandManager
                 || ((maxcount != -1) && (RequiredParametersCount > maxcount)))
             { throw new ArgumentOutOfRangeException("RequiredParametersCount"); }
             this.RequiredParametersCount = RequiredParametersCount;
-
+            
             List<ParameterInfo> @params = new List<ParameterInfo>();
             for (int i = 0;
                  i < (NamesAndTypes.Length - (diff ? 1 : 0));
@@ -148,18 +148,32 @@ namespace CommandManager
                     throw new ArgumentException("Parameter names must be unique.",
                         $"NamesAndTypes[{i}]");
                 }
-                Type type = null;
                 if (oType != null)
                 {
-                    if (!(oType is Type))
+                    if (oType is Type type)
+                    { @params.Add(new ParameterInfo(name, type, showType)); }
+                    else if (oType is string[] strings)
+                    {
+                        strings = strings.Where(s => !string.IsNullOrWhiteSpace(s))
+                                         .Select(s => s.ToLower())
+                                         .Distinct()
+                                         .ToArray();
+                        if (strings.Length == 0)
+                        {
+                            throw new ArgumentException("Parameter types array " +
+                                "must contain at least 1 not null and not " +
+                                "empty element.", $"NamesAndTypes[{i + 1}]");
+                        }
+                        @params.Add(new ParameterInfo(name, strings, showType));
+                    }
+                    else
                     {
                         throw new ArgumentException("Uneven elements of " +
-                            "array (parameter types) must be Type.",
+                            "array (parameter types) must be Type or string[].",
                             $"NamesAndTypes[{i + 1}]");
                     }
-                    else { type = (Type)oType; }
                 }
-                @params.Add(new ParameterInfo(name, type, showType));
+                else { @params.Add(new ParameterInfo(name, (Type)null, showType)); }
             }
 
             if (diff)

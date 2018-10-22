@@ -222,17 +222,7 @@ namespace CommandManager
                 }
 
                 OriginalMethodInfo.Invoke(null,
-                    new object[]
-                    {
-                        new CommandManagerArgs
-                        (
-                            args.Player,
-                            args.Message,
-                            args.Silent,
-                            args.Parameters,
-                            parameters
-                        )
-                    });
+                    new object[] { new CommandManagerArgs(args, parameters) });
             });
         }
 
@@ -299,17 +289,7 @@ namespace CommandManager
                 }
                 
                 OriginalMethodInfo.Invoke(null,
-                    new object[]
-                    {
-                                new CommandManagerArgs
-                                (
-                                    args.Player,
-                                    args.Message,
-                                    args.Silent,
-                                    args.Parameters,
-                                    parameters
-                                )
-                    });
+                    new object[] { new CommandManagerArgs(args, parameters) });
             });
         }
 

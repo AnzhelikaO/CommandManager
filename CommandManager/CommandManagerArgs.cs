@@ -10,26 +10,25 @@ namespace CommandManager
     /// message and parameters. </summary>
     public class CommandManagerArgs
     {
+        /// <summary> Original command args. </summary>
+        public CommandArgs Args { get; }
         /// <summary> Command caller. </summary>
-        public TSPlayer Player { get; }
+        public TSPlayer Player => Args.Player;
         /// <summary> Command input. </summary>
-        public string Message { get; }
+        public string Message => Args.Message;
         /// <summary> True, if <see cref="ConfigFile.CommandSilentSpecifier"/>. </summary>
-        public bool Silent { get; }
+        public bool Silent => Args.Silent;
         /// <summary> Unparsed array, splitted by spaces and quotes. </summary>
-        public List<string> Parameters { get; }
+        public List<string> Parameters => Args.Parameters;
         /// <summary> Collection of parameters, both original and parsed
         /// by <see cref="ParameterTypesAttribute"/>. </summary>
         public ReadOnlyDictionary<string, Parameter[]> ParsedParameters { get; }
         #region Constructor
 
-        internal CommandManagerArgs(TSPlayer Player, string Message, bool Silent,
-            List<string> Parameters, Dictionary<string, Parameter[]> ParsedParameters)
+        internal CommandManagerArgs(CommandArgs CommandArgs,
+            Dictionary<string, Parameter[]> ParsedParameters)
         {
-            this.Player = Player;
-            this.Message = Message;
-            this.Silent = Silent;
-            this.Parameters = Parameters;
+            this.Args = CommandArgs;
             this.ParsedParameters =
                 new ReadOnlyDictionary<string, Parameter[]>(ParsedParameters);
         }
