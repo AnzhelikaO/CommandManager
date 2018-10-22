@@ -55,7 +55,7 @@ namespace CommandManager
         
         public bool Parse(string Parameter, out ParameterParseResult Result)
         {
-            Result = null;
+            Result = new ParameterParseResult(Parameter, Parameter, true, null);
             if ((Type == null)
                 || !CommandManager.Parsers.TryGetValue(Type,
                     out Func<string, ParameterParseResult> func))

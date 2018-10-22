@@ -118,10 +118,10 @@ namespace CommandManager
                     (a is ParameterTypesAttribute));
             CommandDelegate @delegate =
                 ((@params == null)
-                    ? CreateNewCommandDelegate(Method)
+                    ? CreateNewCommandDelegate(Method, true)
                     : CreateNewCommandDelegate(Method, @params,
                         ((ErrorMessageAttribute)attributes.FirstOrDefault(a =>
-                        (a is ErrorMessageAttribute)))?.Message, Name));
+                        (a is ErrorMessageAttribute)))?.Message, Name, true));
             
             #endregion
             CommandByManager cmd = new CommandByManager(Method,
@@ -174,9 +174,13 @@ namespace CommandManager
         #endregion
         #region CheckMethodInfo
 
-        private static void CheckMethodInfo(MethodInfo MethodInfo)
+        private static void CheckMethodInfo(MethodInfo MethodInfo,
+            bool MustHaveCommandInfoAttribute)
         {
-            if (MethodInfo.ReflectedType != typeof(CommandManagerDelegate))
+            if ((MethodInfo == null)
+                || (MethodInfo.ReturnType != typeof(void))
+                || (MethodInfo.GetParameters().Length != 1)
+                || (MethodInfo.GetParameters()[0].ParameterType != typeof(CommandManagerArgs)))
             {
                 throw new ArgumentException("OriginalMethodInfo " +
                     "must be method of CommandManagerDelegate.");
@@ -191,7 +195,8 @@ namespace CommandManager
                 throw new ArgumentException("OriginalMethodInfo " +
                     "must be public.");
             }
-            if (!MethodInfo.GetCustomAttributes().Any(a => (a is CommandInfoAttribute)))
+            if (MustHaveCommandInfoAttribute
+                && !MethodInfo.GetCustomAttributes().Any(a => (a is CommandInfoAttribute)))
             {
                 throw new ArgumentException("OriginalMethodInfo " +
                     "must have CommandInfoAttribute.");
@@ -203,9 +208,9 @@ namespace CommandManager
 
         /// <summary> Creates CommandDelegate with method of CommandManagerDelegate. </summary>
         public static CommandDelegate CreateNewCommandDelegate
-            (MethodInfo OriginalMethodInfo)
+            (MethodInfo OriginalMethodInfo, bool MustHaveCommandInfoAttribute)
         {
-            CheckMethodInfo(OriginalMethodInfo);
+            CheckMethodInfo(OriginalMethodInfo, MustHaveCommandInfoAttribute);
             return (args =>
             {
                 Dictionary<string, Parameter[]> parameters =
@@ -238,9 +243,10 @@ namespace CommandManager
         public static CommandDelegate CreateNewCommandDelegate
             (MethodInfo OriginalMethodInfo,
             ParameterTypesAttribute ParameterTypes,
-            string ErrorMessageOverride, string CommandName)
+            string ErrorMessageOverride, string CommandName,
+            bool MustHaveCommandInfoAttribute)
         {
-            CheckMethodInfo(OriginalMethodInfo);
+            CheckMethodInfo(OriginalMethodInfo, MustHaveCommandInfoAttribute);
             return (args =>
             {
                 if ((ParameterTypes.RequiredParametersCount != -1)
@@ -291,7 +297,7 @@ namespace CommandManager
                         parameters.Add(p.Name, new Parameter[] { param });
                     }
                 }
-
+                
                 OriginalMethodInfo.Invoke(null,
                     new object[]
                     {
