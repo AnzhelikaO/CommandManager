@@ -12,6 +12,7 @@ namespace CommandManager
     /// defines <see cref="Command.HelpText"/>. </para> </summary>
 
     #endregion
+    [AttributeUsage(AttributeTargets.Method)]
     public class HelpAttribute : Attribute
     {
         /// <summary> <see cref="Command.HelpText"/>. </summary>

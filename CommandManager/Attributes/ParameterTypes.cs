@@ -38,13 +38,14 @@ namespace CommandManager
     /// <see cref="Group"/>, <see cref="Region"/>, <see cref="Warp"/></summary>
 
     #endregion
+    [AttributeUsage(AttributeTargets.Method)]
     public class ParameterTypesAttribute : Attribute
     {
         internal ParameterInfo[] ParameterTypes { get; }
         /// <summary> Parameters after required ones count as optional. </summary>
         internal int RequiredParametersCount { get; }
         #region Constructor
-
+        
         #region Summary
 
         /// <summary> Will work only with <see cref="CommandInfoAttribute"/> attribute.
@@ -78,12 +79,12 @@ namespace CommandManager
         public ParameterTypesAttribute(int RequiredParametersCount,
             params object[] NamesAndTypes)
         {
-            if (NamesAndTypes == null)
-            { throw new ArgumentNullException("NamesAndTypes"); }
-            else if (NamesAndTypes.Length == 0)
+            if (NamesAndTypes?.Length == 0)
             {
-                throw new ArgumentException("Array must contain at least " +
-                    "1 element.", "NamesAndTypes");
+                if (RequiredParametersCount < 0)
+                { throw new ArgumentOutOfRangeException("RequiredParametersCount"); }
+                this.RequiredParametersCount = RequiredParametersCount;
+                return;
             }
 
             object last = NamesAndTypes.Last();

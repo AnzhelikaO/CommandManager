@@ -16,5 +16,6 @@ namespace CommandManager
     /// was not found. </para>
     /// Other methods can also potentially replace your command, leaving
     /// saved commands deep in recursive tree. </summary>
+    [AttributeUsage(AttributeTargets.Method)]
     public class ReplaceIfExistsAttribute : Attribute { }
 }

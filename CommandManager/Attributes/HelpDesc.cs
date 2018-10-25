@@ -13,6 +13,7 @@ namespace CommandManager
     /// defines <see cref="Command.HelpDesc"/>. </para> </summary>
 
     #endregion
+    [AttributeUsage(AttributeTargets.Method)]
     public class HelpDescAttribute : Attribute
     {
         /// <summary> <see cref="Command.HelpDesc"/>. </summary>

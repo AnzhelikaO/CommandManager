@@ -91,7 +91,6 @@ namespace CommandManager
             Result = func(Parameter);
             if (Result.Error != null)
             {
-                Console.WriteLine(Parameter);
                 Result.Error = "Invalid parameter " +
                     $"'{Name}': {Result.Error}";
             }

@@ -8,5 +8,6 @@ namespace CommandManager
     /// command delegate means that it will
     /// not be automatically added to
     /// <see cref="Commands.ChatCommands"/>. </summary>
+    [AttributeUsage(AttributeTargets.Method)]
     public class DoNotRegisterAttribute : Attribute { }
 }

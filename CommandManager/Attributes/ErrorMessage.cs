@@ -7,8 +7,9 @@ namespace CommandManager
     /// <see cref="CommandInfoAttribute"/> attribute.
     /// <para> If not null, message overrides automatically 
     /// created syntax error message. </para> </summary>
-    
+
     #endregion
+    [AttributeUsage(AttributeTargets.Method)]
     public class ErrorMessageAttribute : Attribute
     {
         #region Summary

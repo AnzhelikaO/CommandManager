@@ -9,5 +9,6 @@ namespace CommandManager
     /// <para> Adding this attribute to command delegate
     /// sets <see cref="Command.DoLog"/>
     /// to false. </para> </summary>
+    [AttributeUsage(AttributeTargets.Method)]
     public class DoNotLogAttribute : Attribute { }
 }

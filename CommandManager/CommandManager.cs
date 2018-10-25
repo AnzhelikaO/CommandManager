@@ -38,6 +38,7 @@ namespace CommandManager
 
         #pragma warning restore 1591
         #endregion
+
         #region RegisterAll
 
         private void RegisterAll(PluginContainer[] Plugins)
@@ -57,254 +58,7 @@ namespace CommandManager
         }
 
         #endregion
-        #region RegisterMethod
 
-        private static bool Register(MethodInfo Method,
-            bool SkipIfHasDoNotRegisterAttribute, out string Name)
-        {
-            #region Check if static, public, has CommandInfoAttribute
-
-            Name = null;
-            if (!Method.IsStatic || !Method.IsPublic) { return false; }
-            List<Attribute> attributes = Method.GetCustomAttributes().ToList();
-            if (!attributes.Any(a => (a is CommandInfoAttribute))
-                || (SkipIfHasDoNotRegisterAttribute
-                        ? attributes.Any(a => (a is DoNotRegisterAttribute))
-                        : false))
-            { return false; }
-
-            #endregion
-            #region DeleteOldMethod
-
-            int old = Commands.ChatCommands.FindIndex
-                (c => ((c is CommandByManager c2) && (c2.MethodInfo == Method)));
-            if (old != -1) { Commands.ChatCommands.RemoveAt(old); }
-
-            #endregion
-            #region ReadNames
-
-            CommandInfoAttribute info =
-                Method.GetCustomAttribute<CommandInfoAttribute>();
-            string[] names = info.CommandNames;
-            Name = names[0];
-
-            #endregion
-            #region FindCommandsWithSameNames
-
-            List<Command> found = Commands.ChatCommands.Where(c =>
-                c.Names.Any(n => names.Contains(n))).ToList();
-            Command savedC = found.FirstOrDefault();
-            bool replace = attributes.Any(a => (a is ReplaceIfExistsAttribute));
-            List<Command> saved = new List<Command>();
-            if (replace)
-            {
-                if (info.CommandPermissions?.Count == 0)
-                {
-                    info.CommandPermissions =
-                        (savedC?.Permissions ?? new List<string>());
-                }
-                foreach (Command c in found)
-                {
-                    saved.Add(c.Clone());
-                    Commands.ChatCommands.Remove(c);
-                }
-            }
-
-            #endregion
-            #region ParameterTypes
-
-            ParameterTypesAttribute @params =
-                (ParameterTypesAttribute)attributes.FirstOrDefault(a =>
-                    (a is ParameterTypesAttribute));
-            CommandDelegate @delegate =
-                ((@params == null)
-                    ? CreateNewCommandDelegate(Method, true)
-                    : CreateNewCommandDelegate(Method, @params,
-                        ((ErrorMessageAttribute)attributes.FirstOrDefault(a =>
-                        (a is ErrorMessageAttribute)))?.Message, Name, true));
-            
-            #endregion
-            CommandByManager cmd = new CommandByManager(Method,
-                saved, info.CommandPermissions, @delegate, names);
-            #region Help, HelpDesc, DisallowServer, DoNotLog attributes
-
-            bool hText = false, hDesc = false, server = false, log = false;
-            foreach (Attribute a in attributes)
-            {
-                if (a is HelpAttribute h)
-                {
-                    hText = true;
-                    cmd.HelpText = h.CommandHelp;
-                }
-                else if (a is HelpDescAttribute d)
-                {
-                    hDesc = true;
-                    cmd.HelpDesc = d.CommandHelpDesc;
-                }
-                else if (a is DisallowServerAttribute)
-                {
-                    server = true;
-                    cmd.AllowServer = false;
-                }
-                else if (a is DoNotLogAttribute)
-                {
-                    log = true;
-                    cmd.DoLog = false;
-                }
-            }
-
-            #endregion
-            #region RestoreSomeData
-
-            if (replace && (savedC != null))
-            {
-                if (!hText && (savedC.HelpText != null))
-                { cmd.HelpText = savedC.HelpText; }
-                if (!hDesc && (savedC.HelpDesc?.Length > 0))
-                { cmd.HelpDesc = savedC.HelpDesc; }
-                if (!server) { cmd.AllowServer = savedC.AllowServer; }
-                if (!log) { cmd.DoLog = savedC.DoLog; }
-            }
-
-            #endregion
-            Commands.ChatCommands.Add(cmd);
-            return true;
-        }
-
-        #endregion
-        #region CheckMethodInfo
-
-        private static void CheckMethodInfo(MethodInfo MethodInfo,
-            bool MustHaveCommandInfoAttribute)
-        {
-            if ((MethodInfo == null)
-                || (MethodInfo.ReturnType != typeof(void))
-                || (MethodInfo.GetParameters().Length != 1)
-                || (MethodInfo.GetParameters()[0].ParameterType != typeof(CommandManagerArgs)))
-            {
-                throw new ArgumentException("OriginalMethodInfo " +
-                    "must be method of CommandManagerDelegate.");
-            }
-            if (!MethodInfo.IsStatic)
-            {
-                throw new ArgumentException("OriginalMethodInfo " +
-                    "must be static.");
-            }
-            if (!MethodInfo.IsPublic)
-            {
-                throw new ArgumentException("OriginalMethodInfo " +
-                    "must be public.");
-            }
-            if (MustHaveCommandInfoAttribute
-                && !MethodInfo.GetCustomAttributes().Any(a => (a is CommandInfoAttribute)))
-            {
-                throw new ArgumentException("OriginalMethodInfo " +
-                    "must have CommandInfoAttribute.");
-            }
-        }
-
-        #endregion
-        #region CreateNewCommandDelegate [Without ParameterTypesAttribute]
-
-        /// <summary> Creates CommandDelegate with method of CommandManagerDelegate. </summary>
-        public static CommandDelegate CreateNewCommandDelegate
-            (MethodInfo OriginalMethodInfo, bool MustHaveCommandInfoAttribute)
-        {
-            CheckMethodInfo(OriginalMethodInfo, MustHaveCommandInfoAttribute);
-            return (args =>
-            {
-                Dictionary<string, Parameter[]> parameters =
-                    new Dictionary<string, Parameter[]>();
-                for (int i = 0; i < args.Parameters.Count; i++)
-                {
-                    parameters.Add(i.ToString(),
-                        new Parameter[] { new Parameter(args.Parameters[i], null) });
-                }
-
-                OriginalMethodInfo.Invoke(null,
-                    new object[] { new CommandManagerArgs(args, parameters) });
-            });
-        }
-
-        #endregion
-        #region CreateNewCommandDelegate [With ParameterTypesAttribute]
-
-        /// <summary> Creates CommandDelegate with method of CommandManagerDelegate. </summary>
-        public static CommandDelegate CreateNewCommandDelegate
-            (MethodInfo OriginalMethodInfo,
-            ParameterTypesAttribute ParameterTypes,
-            string ErrorMessageOverride, string CommandName,
-            bool MustHaveCommandInfoAttribute)
-        {
-            CheckMethodInfo(OriginalMethodInfo, MustHaveCommandInfoAttribute);
-            return (args =>
-            {
-                if ((ParameterTypes.RequiredParametersCount != -1)
-                    && (args.Parameters.Count < ParameterTypes.RequiredParametersCount))
-                {
-                    args.Player.SendErrorMessage
-                    (string.IsNullOrWhiteSpace(ErrorMessageOverride)
-                        ? ParameterTypes.CreateErrorMessage(CommandName)
-                        : ErrorMessageOverride);
-                    return;
-                }
-
-                Dictionary<string, Parameter[]> parameters =
-                    new Dictionary<string, Parameter[]>();
-                for (int i = 0; i < ParameterTypes.ParameterTypes.Length; i++)
-                {
-                    ParameterInfo p = ParameterTypes.ParameterTypes[i];
-                    if ((i < args.Parameters.Count) && (p != null))
-                    {
-                        if (p.AllowMergeInErrorMessage.HasValue)
-                        {
-                            if (!p.Parse(args.Parameters.Skip(i),
-                                out ParameterParseResult[] result))
-                            {
-                                args.Player.SendErrorMessage(result.FirstOrDefault
-                                    (r => (r.Error != null)).Error);
-                                return;
-                            }
-                            parameters.Add(p.Name, result.Select(r =>
-                                new Parameter(r.Input, r.Output)).ToArray());
-                        }
-                        else if (!p.Parse(args.Parameters[i],
-                            out ParameterParseResult result))
-                        {
-                            args.Player.SendErrorMessage(result.Error);
-                            return;
-                        }
-                        else
-                        {
-                            Parameter param = new Parameter(result.Input, result.Output);
-                            parameters.Add(p.Name, new Parameter[] { param });
-                        }
-                    }
-                    else
-                    {
-                        Parameter param = new Parameter
-                            (args.Parameters.ElementAtOrDefault(i), null);
-                        parameters.Add(p.Name, new Parameter[] { param });
-                    }
-                }
-                
-                OriginalMethodInfo.Invoke(null,
-                    new object[] { new CommandManagerArgs(args, parameters) });
-            });
-        }
-
-        #endregion
-        #region RegisterCommand
-
-        /// <summary> Adds command in
-        /// <see cref="Commands.ChatCommands"/> using
-        /// information from method attributes. </summary>
-        public static bool Register(CommandManagerDelegate Command,
-            bool SkipIfHasDoNotRegisterAttribute = false) =>
-            Register(Command.Method,
-                SkipIfHasDoNotRegisterAttribute, out string Name);
-
-        #endregion
         #region RegisterPlugin
 
         /// <summary> Registers all <see cref="CommandManagerDelegate"/>
@@ -313,42 +67,20 @@ namespace CommandManager
             bool SkipIfHasNotRegisterAttribute = false)
         {
             List<string> names = new List<string>();
-            foreach (Type type in Assembly.GetAssembly(Plugin.GetType()).GetTypes())
+            MethodInfo[] methods = Assembly.GetAssembly(Plugin.GetType())
+                                           .GetTypes()
+                                           .SelectMany(t => t.GetMethods())
+                                           .Where(m => m.IsCMDelegate())
+                                           .ToArray();
+            
+            foreach (MethodInfo method in methods)
             {
-                foreach (MethodInfo method in type.GetMethods())
-                {
-                    if (Register(method, SkipIfHasNotRegisterAttribute,
-                        out string name))
-                    { names.Add(name); }
-                }
+                if (Register(method, SkipIfHasNotRegisterAttribute,
+                    out string name))
+                { names.Add(name); }
             }
             return names.ToArray();
         }
-
-        #endregion
-        #region DeregisterMethod
-
-        private static bool Deregister(MethodInfo Method)
-        {
-            int index = Commands.ChatCommands.FindIndex
-                (c => ((c is CommandByManager c2) && (c2.MethodInfo == Method)));
-            if (index != -1)
-            {
-                CommandByManager found = (CommandByManager)Commands.ChatCommands[index];
-                if (found.Saved?.Count > 0)
-                { Commands.ChatCommands.AddRange(found.Saved.Where(c => (c != null))); }
-                Commands.ChatCommands.Remove(found);
-            }
-            return (index != -1);
-        }
-
-        #endregion
-        #region DeregisterCommand
-
-        /// <summary> Deregisters command if it
-        /// was registered before. </summary>
-        public static bool Deregister(CommandManagerDelegate Command) =>
-            Deregister(Command.Method);
 
         #endregion
         #region DeregisterPlugin
@@ -371,20 +103,65 @@ namespace CommandManager
         }
 
         #endregion
-        #region CommandByManager
 
-        internal class CommandByManager : Command
+        #region RegisterCommand
+
+        /// <summary> Adds command in
+        /// <see cref="Commands.ChatCommands"/> using
+        /// information from method attributes. </summary>
+        public static bool Register(CommandManagerDelegate Command,
+            bool SkipIfHasDoNotRegisterAttribute = false) =>
+            Register(Command.Method,
+                SkipIfHasDoNotRegisterAttribute, out string Name);
+
+        #endregion
+        #region DeregisterCommand
+
+        /// <summary> Deregisters command if it
+        /// was registered before. </summary>
+        public static bool Deregister(CommandManagerDelegate Command) =>
+            Deregister(Command.Method);
+
+        #endregion
+        
+        #region RegisterMethod
+
+        private static bool Register(MethodInfo Method,
+            bool SkipIfHasDoNotRegisterAttribute, out string Name)
         {
-            public MethodInfo MethodInfo { get; }
-            public List<Command> Saved { get; }
-            public CommandByManager(MethodInfo MethodInfo,
-                List<Command> Saved, List<string> permissions,
-                CommandDelegate cmd, params string[] names)
-                : base(permissions, cmd, names)
+            Command cmd = Creater.Create(Method,
+                SkipIfHasDoNotRegisterAttribute, out List<Command> Remove);
+            Name = cmd?.Name;
+            if (cmd == null) { return false; }
+            foreach (Command c in Remove.Reverse<Command>())
+            { Commands.ChatCommands.Remove(c); }
+            Commands.ChatCommands.Add(cmd);
+            return true;
+        }
+
+        #endregion        
+        #region DeregisterMethod
+
+        private static bool Deregister(MethodInfo Method)
+        {
+            foreach (SubCommandAttribute a in
+                Method.GetCustomAttributes(typeof(SubCommandAttribute)))
             {
-                this.MethodInfo = MethodInfo;
-                this.Saved = Saved;
+                Deregister(a.Method);
+                SubCommandAttribute.SubCommands.Remove(a.Method);
             }
+
+            int index = Commands.ChatCommands.FindIndex
+                (c => ((c is CommandByManager c2) && (c2.MethodInfo == Method)));
+            if (index != -1)
+            {
+                CommandByManager found = (CommandByManager)Commands.ChatCommands[index];
+                if (found.Saved?.Count > 0)
+                { Commands.ChatCommands.AddRange(found.Saved.Where(c => (c != null))); }
+                Commands.ChatCommands.Remove(found);
+
+            }
+            return (index != -1);
         }
 
         #endregion

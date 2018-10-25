@@ -75,6 +75,9 @@
     <Compile Include="Attributes\CommandInfo.cs" />
     <Compile Include="Attributes\ErrorMessage.cs" />
     <Compile Include="Attributes\ReplaceIfExists.cs" />
+    <Compile Include="Attributes\SubCommand.cs" />
+    <Compile Include="Attributes\SubCommandIndexSkip.cs" />
+    <Compile Include="CommandByManager.cs" />
     <Compile Include="CommandManager.cs" />
     <Compile Include="CommandManagerArgs.cs" />
     <Compile Include="Attributes\DisallowServer.cs" />
@@ -83,6 +86,7 @@
     <Compile Include="Attributes\Help.cs" />
     <Compile Include="Attributes\HelpDesc.cs" />
     <Compile Include="Attributes\ParameterTypes.cs" />
+    <Compile Include="Creater.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Parameter\Parameter.cs" />
     <Compile Include="Parameter\ParameterInfo.cs" />
