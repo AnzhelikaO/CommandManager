@@ -7,12 +7,12 @@ using Terraria.ID;
 using TShockAPI;
 using TShockAPI.DB;
 using TShockAPI.Localization;
-#pragma warning disable 1591
 #endregion
 namespace CommandManager
 {
     public partial class CommandManager
     {
+        /// <summary> 1y2M3d4h5m6s </summary>
         public static System.Text.RegularExpressions.Regex CommandTimeFormat =
             new System.Text.RegularExpressions.Regex
             (@"(?<y>\d{1,2}[yY])?(?<mon>\d{1,9}M)?(?<d>\d{1,9}[dD])?" +
@@ -83,9 +83,8 @@ namespace CommandManager
                                     false, "Buff id cannot be greater " +
                                     $"than {Main.maxBuffTypes}.");
                             }
-                            return new ParameterParseResult
-                                (o, new Buff((byte)id, TShock.Utils.GetBuffName(id)),
-                                true, null);
+                            return new ParameterParseResult(o,
+                                new Buff((byte)id), true, null);
                         }
 
                         #endregion
@@ -104,10 +103,9 @@ namespace CommandManager
                                 string.Join(", ", byName.Select(b =>
                                 $"{TShock.Utils.GetBuffName(b)} ({b})")) + ".");
                         }
-                        return new ParameterParseResult
-                            (o, new Buff((byte)byName[0],
-                                TShock.Utils.GetBuffName(byName[0])),
-                            true, null);
+                        
+                        return new ParameterParseResult(o,
+                            new Buff((byte)byName[0]), true, null);
 
                         #endregion
                     })
@@ -223,10 +221,8 @@ namespace CommandManager
                                     false, "Item prefix id cannot be " +
                                     $"greater than {PrefixID.Count - 1}.");
                             }
-                            return new ParameterParseResult
-                                (o, new ItemPrefix((byte)id,
-                                    EnglishLanguage.GetPrefixById(id)),
-                                true, null);
+                            return new ParameterParseResult(o,
+                                new ItemPrefix((byte)id), true, null);
                         }
 
                         #endregion
@@ -246,10 +242,8 @@ namespace CommandManager
                                 $"{EnglishLanguage.GetPrefixById(p)} ({p})")) +
                                 ".");
                         }
-                        return new ParameterParseResult
-                            (o, new Buff((byte)byName[0],
-                                EnglishLanguage.GetPrefixById(byName[0])),
-                            true, null);
+                        return new ParameterParseResult(o,
+                            new ItemPrefix((byte)byName[0]), true, null);
 
                         #endregion
                     })
@@ -285,7 +279,7 @@ namespace CommandManager
                         else
                         {
                             return new ParameterParseResult
-                                (o, new MapPointX(x), true, null);
+                                (o, new MapPointX((short)x), true, null);
                         }
                     })
                 },
@@ -320,7 +314,7 @@ namespace CommandManager
                         else
                         {
                             return new ParameterParseResult
-                                (o, new MapPointY(y), true, null);
+                                (o, new MapPointY((short)y), true, null);
                         }
                     })
                 },
@@ -559,25 +553,25 @@ namespace CommandManager
                             case "day":
                                 {
                                     return new ParameterParseResult
-                                        (o, new GameTime(true, 0.0d, "4:30"),
+                                        (o, new GameTime(0.0d, true),
                                         true, null);
                                 }
                             case "noon":
                                 {
                                     return new ParameterParseResult
-                                        (o, new GameTime(true, 27000.0d, "12:00"),
+                                        (o, new GameTime(27000.0d, true),
                                         true, null);
                                 }
                             case "night":
                                 {
                                     return new ParameterParseResult
-                                        (o, new GameTime(false, 0.0d, "19:30"),
+                                        (o, new GameTime(0.0d, false),
                                         true, null);
                                 }
                             case "midnight":
                                 {
                                     return new ParameterParseResult
-                                        (o, new GameTime(false, 16200.0d, "0:00"),
+                                        (o, new GameTime(16200.0d, false),
                                         true, null);
                                 }
                         }
@@ -621,23 +615,8 @@ namespace CommandManager
                             return new ParameterParseResult(o, o,
                                 false, "Minute amount cannot be greater than 59.");
                         }
-                        decimal time = hours + (minutes / 60.0m);
-                        time -= 4.50m;
-                        if (time < 0.00m) { time += 24.00m; }
-                        return ((time >= 15.00m)
-                                    ? new ParameterParseResult
-                                        (
-                                            o, new GameTime(false,
-                                                (double)((time - 15.00m) * 3600.0m),
-                                                o),
-                                            true, null
-                                        )
-                                    : new ParameterParseResult
-                                        (
-                                            o, new GameTime(true,
-                                                (double)(time * 3600.0m), o),
-                                            true, null
-                                        ));
+
+                        return new ParameterParseResult(o, new GameTime(o), true, null);
                     })
                 },
 
