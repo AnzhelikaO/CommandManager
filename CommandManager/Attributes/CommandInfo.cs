@@ -204,8 +204,7 @@ namespace CommandManager
 
         #endregion
         public CommandInfoAttribute(string[] Permissions, params string[] Names)
-            : this(Permissions, 0, Names)
-        { this.SubCommandParameterIndex = -2; }
+            : this(Permissions, 0, Names) { }
 
         #region Summary
 
@@ -258,8 +257,7 @@ namespace CommandManager
         public CommandInfoAttribute(string Permission, params string[] Names)
             : this((string.IsNullOrWhiteSpace(Permission)
                         ? new string[0]
-                        : new string[] { Permission }), 0, Names)
-        { this.SubCommandParameterIndex = -2; }
+                        : new string[] { Permission }), 0, Names) { }
 
         #region Summary
 
@@ -283,8 +281,7 @@ namespace CommandManager
 
         #endregion
         public CommandInfoAttribute(Type PermissionContainer, params string[] Names)
-            : this(PermissionContainer, 0, Names)
-        { this.SubCommandParameterIndex = -2; }
+            : this(PermissionContainer, 0, Names) { }
 
         #endregion
     }

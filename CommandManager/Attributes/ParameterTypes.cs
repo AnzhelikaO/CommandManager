@@ -83,6 +83,7 @@ namespace CommandManager
             {
                 if (RequiredParametersCount < 0)
                 { throw new ArgumentOutOfRangeException("RequiredParametersCount"); }
+                this.ParameterTypes = new ParameterInfo[0];
                 this.RequiredParametersCount = RequiredParametersCount;
                 return;
             }
